@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Basketball Quiz Game</title>
+    <link href="https://fonts.googleapis.com/css2?family=Merriweather&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+        #background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background-image: url('https://iili.io/d2vlrbI.png');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+        }
+        #quiz-container {
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            width: 80vw;
+            height: 80vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+        }
+        h1 {
+            color: purple;
+            font-size: 3vw;
+            margin-bottom: 20px;
+        }
+        #question {
+            font-size: 3vw;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+        #options {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        button {
+            margin: 5px;
+            padding: 15px 30px;
+            cursor: pointer;
+            font-size: 2vw;
+            background-color: orange;
+            border: 2px solid black;
+            border-radius: 10px;
+            transition: background-color 0.3s;
+            min-width: 200px;
+        }
+        button:hover, button:focus {
+            background-color: #ffa500;
+            outline: none;
+        }
+        button::before {
+            content: attr(data-key) ") ";
+            font-weight: bold;
+        }
+        #result {
+            margin-top: 20px;
+            font-weight: bold;
+            font-size: 3vw;
+        }
+        #animation {
+            width: 100%;
+            height: 300px;
+            position: relative;
+            overflow: hidden;
+        }
+        .basketball {
+            width: 50px;
+            height: 50px;
+            background-color: #ff7f00;
+            border-radius: 50%;
+            position: absolute;
+            bottom: 20px;
+            left: 0;
+            box-shadow: inset -10px -10px 15px rgba(0,0,0,0.3);
+            z-index: 2;
+        }
+        .basketball::before, .basketball::after {
+            content: '';
+            position: absolute;
+            background-color: black;
+        }
+        .basketball::before {
+            width: 50px;
+            height: 2px;
+            top: 25px;
+            left: 0;
+        }
+        .basketball::after {
+            width: 2px;
+            height: 50px;
+            top: 0;
+            left: 25px;
+        }
+        .hoop {
+            width: 100px;
+            height: 5px;
+            background-color: red;
+            position: absolute;
+            top: 150px;
+            right: 50px;
+            z-index: 3;
+        }
+        .backboard {
+            width: 10px;
+            height: 80px;
+            background-color: white;
+            border: 2px solid black;
+            position: absolute;
+            top: 110px;
+            right: 40px;
+            z-index: 1;
+        }
+        .net {
+            width: 90px;
+            height: 60px;
+            border: 2px solid #ccc;
+            border-top: none;
+            border-radius: 0 0 50% 50%;
+            position: absolute;
+            top: 155px;
+            right: 55px;
+            background: repeating-linear-gradient(
+                45deg,
+                transparent,
+                transparent 5px,
+                #eee 5px,
+                #eee 10px
+            );
+            z-index: 1;
+        }
+        #timer-container, #score-container {
+            position: absolute;
+            font-size: 2.5vw;
+            font-weight: bold;
+            font-family: 'Merriweather', serif;
+        }
+        #timer-container {
+            top: 10px;
+            left: 10px;
+            color: red;
+        }
+        #score-container {
+            top: 10px;
+            right: 10px;
+            color: green;
+        }
+        #transition-screen {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80%;
+            height: 60%;
+            background-color: rgba(255, 255, 255, 0.9);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+        }
+        #transition-image {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+        #restart-button {
+            display: none;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div id="background"></div>
+    <div id="quiz-container">
+        <h1>Basketball Quiz Game</h1>
+        <div id="timer-container">Time Remaining: <span id="timer">45</span></div>
+        <div id="score-container">Score: <span id="score">0</span></div>
+        <div id="question"></div>
+        <div id="options"></div>
+        <div id="result"></div>
+        <div id="animation">
+            <div class="backboard"></div>
+            <div class="hoop"></div>
+            <div class="net"></div>
+            <div class="basketball"></div>
+        </div>
+        <div id="transition-screen">
+            <img id="transition-image" src="https://iili.io/d2Ulk8J.png" alt="Transition Image">
+        </div>
+        <button id="restart-button" style="display: none;">Restart</button>
+    </div>
+    <script>
+        const questions = [
+            {
+                question: "What is the diameter of a basketball hoop?",
+                options: ["16 inches", "18 inches", "20 inches", "22 inches"],
+                answer: 1
+            },
+            {
+                question: "How many players are on the court for each team in a standard basketball game?",
+                options: ["4", "5", "6", "7"],
+                answer: 1
+            },
+            {
+                question: "Which NBA player is known as 'The Greek Freak'?",
+                options: ["LeBron James", "Kevin Durant", "Giannis Antetokounmpo", "Stephen Curry"],
+                answer: 2
+            },
+            {
+                question: "How long is a standard NBA game?",
+                options: ["36 minutes", "40 minutes", "44 minutes", "48 minutes"],
+                answer: 3
+            }
+        ];
+
+        let currentQuestion = 0;
+        let timerInterval;
+        let timeLeft;
+        let score = 0;
+
+        function displayQuestion() {
+            const questionEl = document.getElementById("question");
+            const optionsEl = document.getElementById("options");
+            const resultEl = document.getElementById("result");
+            const timerEl = document.getElementById("timer");
+            const restartButton = document.getElementById("restart-button");
+
+            questionEl.textContent = questions[currentQuestion].question;
+            optionsEl.innerHTML = "";
+            resultEl.textContent = "";
+            restartButton.style.display = "none";
+
+            const keys = ['A', 'B', 'C', 'D'];
+            questions[currentQuestion].options.forEach((option, index) => {
+                const button = document.createElement("button");
+                button.textContent = option;
+                button.setAttribute('data-key', keys[index]);
+                button.onclick = () => checkAnswer(index);
+                optionsEl.appendChild(button);
+            });
+
+            timeLeft = 45;
+            timerEl.textContent = timeLeft;
+            clearInterval(timerInterval);
+            timerInterval = setInterval(updateTimer, 1000);
+            resetBasketball();
+        }
+
+        function updateTimer() {
+            const timerEl = document.getElementById("timer");
+            timeLeft--;
+            timerEl.textContent = timeLeft;
+
+            if (timeLeft <= 0) {
+                clearInterval(timerInterval);
+                disableOptions();
+                showTransitionScreen();
+            }
+        }
+
+        function disableOptions() {
+            const buttons = document.querySelectorAll('#options button');
+            buttons.forEach(button => {
+                button.disabled = true;
+                button.style.opacity = '0.5';
+            });
+        }
+
+        function checkAnswer(selectedIndex) {
+            const resultEl = document.getElementById("result");
+            const scoreEl = document.getElementById("score");
+            clearInterval(timerInterval);
+
+            if (selectedIndex === questions[currentQuestion].answer) {
+                resultEl.textContent = "Correct!";
+                animateBasket(true);
+                score++;
+                scoreEl.textContent = score;
+            } else {
+                resultEl.textContent = "Incorrect. Try again!";
+                animateBasket(false);
+            }
+
+            currentQuestion++;
+            if (currentQuestion < questions.length) {
+                setTimeout(showTransitionScreen, 2000);
+            } else {
+                setTimeout(() => {
+                    resultEl.textContent = `Quiz completed! Your final score is ${score}/${questions.length}`;
+                    document.getElementById("restart-button").style.display = "inline-block";
+                }, 2000);
+            }
+        }
+
+        function animateBasket(correct) {
+            const basketball = document.querySelector(".basketball");
+            const animationDuration = 1500;
+            const fps = 60;
+            const totalFrames = animationDuration / 1000 * fps;
+            let currentFrame = 0;
+
+            const startX = 0;
+            const endX = correct ? document.querySelector('.hoop').offsetLeft + 50 : document.querySelector('.hoop').offsetLeft;
+            const maxHeight = 145;
+
+            function animate() {
+                if (currentFrame <= totalFrames) {
+                    const progress = currentFrame / totalFrames;
+                    const x = startX + (endX - startX) * progress;
+                    const y = maxHeight * Math.sin(Math.PI * progress);
+
+                    basketball.style.left = `${x}px`;
+                    basketball.style.bottom = `${y + 20}px`;
+
+                    currentFrame++;
+                    requestAnimationFrame(animate);
+                } else {
+                    if (correct) {
+                        basketball.style.bottom = '20px';
+                    } else {
+                        const bounceX = endX + 50;
+                        basketball.style.left = `${bounceX}px`;
+                        basketball.style.bottom = '20px';
+                    }
+                    setTimeout(resetBasketball, 500);
+                }
+            }
+
+            animate();
+        }
+
+        function resetBasketball() {
+            const basketball = document.querySelector(".basketball");
+            basketball.style.transition = 'none';
+            basketball.style.left = '0';
+            basketball.style.bottom = '20px';
+        }
+
+        function showTransitionScreen() {
+            const transitionScreen = document.getElementById("transition-screen");
+            transitionScreen.style.display = "flex";
+            document.addEventListener('keydown', handleTransitionKeyPress);
+            document.addEventListener('click', handleTransitionClick);
+        }
+
+        function hideTransitionScreen() {
+            const transitionScreen = document.getElementById("transition-screen");
+            transitionScreen.style.display = "none";
+            document.removeEventListener('keydown', handleTransitionKeyPress);
+            document.removeEventListener('click', handleTransitionClick);
+            displayQuestion();
+        }
+
+        function handleTransitionKeyPress(event) {
+            if (event.code === 'Space') {
+                hideTransitionScreen();
+            }
+        }
+
+        function handleTransitionClick() {
+            hideTransitionScreen();
+        }
+
+        document.addEventListener('keydown', (event) => {
+            const key = event.key.toUpperCase();
+            if (['A', 'B', 'C', 'D'].includes(key)) {
+                const index = ['A', 'B', 'C', 'D'].indexOf(key);
+                const buttons = document.querySelectorAll('#options button');
+                if (buttons[index] && !buttons[index].disabled) {
+                    buttons[index].click();
+                }
+            }
+        });
+
+        function restartQuiz() {
+            currentQuestion = 0;
+            score = 0;
+            document.getElementById("score").textContent = score;
+            displayQuestion();
+        }
+
+        document.getElementById("restart-button").addEventListener("click", restartQuiz);
+
+        displayQuestion();
+    </script>
+</body>
+</html>
